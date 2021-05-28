@@ -27,7 +27,6 @@ public class KeycloakConfig extends KeycloakWebSecurityConfigurerAdapter {
 
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-    	System.out.println("*********** 1");
         KeycloakAuthenticationProvider provider = new KeycloakAuthenticationProvider();
         provider.setGrantedAuthoritiesMapper(new SimpleAuthorityMapper());
         auth.authenticationProvider(provider);
@@ -36,7 +35,6 @@ public class KeycloakConfig extends KeycloakWebSecurityConfigurerAdapter {
     @Bean
     @Override
     protected SessionAuthenticationStrategy sessionAuthenticationStrategy() {
-    	System.out.println("*********** 2");
     	return new RegisterSessionAuthenticationStrategy(
     	          new SessionRegistryImpl());
     }
@@ -44,17 +42,19 @@ public class KeycloakConfig extends KeycloakWebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception
     {
-    	System.out.println("*********** 3");
         super.configure(http);
         http
-                .authorizeRequests()
-                .anyRequest().permitAll();
+        .cors()
+        .and()        
+        .authorizeRequests()
+        .antMatchers("/api/public/**").permitAll()
+        .antMatchers("/api/authenticate/token").permitAll()
+        .antMatchers("/api/**").authenticated();
         http.csrf().disable();
     }
 
     @Bean
     public KeycloakConfigResolver keycloakConfigResolver(){
-    	System.out.println("*********** 4");
         return new KeycloakSpringBootConfigResolver();
     }
 }

@@ -22,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.client.RestTemplate;
 
 @Service
@@ -68,12 +69,12 @@ public class KeycloakService {
     		   HttpHeaders headers = new HttpHeaders();
     		   headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
     		   HttpEntity<?> entity = new HttpEntity<Object>(body, headers);
+    		   System.out.println(keyCloackUrl+"/token");
     		   response = restTemplate.exchange(
-    				   keyCloackUrl+"/auth", HttpMethod.POST, entity, String.class);
+    				   keyCloackUrl+"/token", HttpMethod.POST, entity, String.class);
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 		}
-    	System.out.println(response);
     	return response.getBody();
     }
     
@@ -107,7 +108,6 @@ public class KeycloakService {
     		   HttpHeaders headers = new HttpHeaders();
     		   headers.set("Authorization", token);
     		   headers.set("Content-Type", "application/x-www-form-urlencoded");
-    		   //headers.setBearerAuth(token);
     		   HttpEntity<?> entity = new HttpEntity<Object>(body, headers);
     		   System.out.println(keyCloackUrl+"/userinfo");
     		   response = restTemplate.exchange(
@@ -142,6 +142,34 @@ public class KeycloakService {
     	System.out.println(response);
     	return response.getBody();
 	}
+	
+	
+	
+	public String logout(DUserToken usuario, String authorizationHeader) {
+		ResponseEntity<String> response  = null;
+    	try {
+    		 restTemplate = new RestTemplate();
+    		   MultiValueMap<String, String> body = new LinkedMultiValueMap<String, String>();
+    		   HttpHeaders headers = new HttpHeaders();
+    		   headers.set("Authorization", authorizationHeader);
+    		   headers.set("Content-Type", "application/x-www-form-urlencoded");
+    		   body.add("refresh_token", usuario.getRefreshToken());
+    		   body.add("redirect_uri", usuario.getRedirectURI());
+    		   body.add("token", usuario.getToken());
+    		   body.add("grant_type", "password");
+    		   body.add("client_id", resource);
+    		   body.add("client_secret", secret);
+    		   HttpEntity<?> entity = new HttpEntity<Object>(body, headers);
+    		   System.out.println(keyCloackUrl+"/logout");
+    		   response = restTemplate.exchange(
+    				   keyCloackUrl+"/logout", HttpMethod.POST, entity, String.class);
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+		}
+    	System.out.println(response);
+    	return response.getBody();
+	}
+	
 //    
 //    public Object[] createUser(User user){
 //        String message = new String();
@@ -186,17 +214,17 @@ public class KeycloakService {
 
 
 
-//    private RealmResource getRealmResource(){
-//        Keycloak kc = KeycloakBuilder.builder().serverUrl(server_url).realm(realm).username("admin")
-//                .password(secret).clientId(resource).resteasyClient(new ResteasyClientBuilder().connectionPoolSize(10).build())
-//                .build();
-//        return kc.realm(realm);
-//    }
-//
-//    private UsersResource getUsersResource(){
-//        RealmResource realmResource = getRealmResource();
-//        return realmResource.users();
-//    }
+    private RealmResource getRealmResource(){
+        Keycloak kc = KeycloakBuilder.builder().serverUrl(server_url).realm(realm).username("admin")
+                .password("admin").clientId(resource).resteasyClient(new ResteasyClientBuilder().connectionPoolSize(10).build())
+                .build();
+        return kc.realm(realm);
+    }
+
+    public UsersResource getUsersResource(){
+        RealmResource realmResource = getRealmResource();
+        return realmResource.users();
+    }
 
 
 

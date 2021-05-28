@@ -23,6 +23,6 @@ public class DUserToken implements Serializable {
 	private String realm;
 	private String username;
 	private String password;
-	
+	private String redirectURI;
 	
 }
