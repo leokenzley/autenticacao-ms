@@ -1,6 +1,6 @@
 package datati.autenticacaoms.authenticate;
 
-public class Usuario {
+public class DUsuarioLogin {
 	private String username;
 	private String password;
 	

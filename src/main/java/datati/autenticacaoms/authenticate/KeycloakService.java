@@ -34,8 +34,8 @@ public class KeycloakService {
     private String realm;
     
     
-    @Value("${keycloack.authenticate.token.url}")
-    private String apiAuthenticateTokenUrl;
+    @Value("${keycloack.url}")
+    private String keyCloackUrl;
     
     @Value("${keycloak.resource}")
     private String resource;
@@ -55,7 +55,7 @@ public class KeycloakService {
      * @param usuario
      * @return
      */
-    public String authenticate(Usuario usuario) {
+    public String authenticate(DUserToken usuario) {
     	ResponseEntity<String> response  = null;
     	try {
     		 restTemplate = new RestTemplate();
@@ -69,7 +69,7 @@ public class KeycloakService {
     		   headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
     		   HttpEntity<?> entity = new HttpEntity<Object>(body, headers);
     		   response = restTemplate.exchange(
-    				   apiAuthenticateTokenUrl, HttpMethod.POST, entity, String.class);
+    				   keyCloackUrl+"/auth", HttpMethod.POST, entity, String.class);
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 		}
@@ -77,55 +77,128 @@ public class KeycloakService {
     	return response.getBody();
     }
     
-    public Object[] createUser(User user){
-        String message = new String();
-        int statusId = 0;
-         try {
-             UsersResource usersResource = getUsersResource();
-             UserRepresentation userRepresentation = new UserRepresentation();
-             userRepresentation.setUsername(user.getUsername());
-             userRepresentation.setEmail(user.getEmail());
-             userRepresentation.setFirstName(user.getFirstName());
-             userRepresentation.setLastName(user.getLastName());
-             userRepresentation.setEnabled(true);
+    
+	public String refreshToken(DUserToken usuario) {
+		ResponseEntity<String> response  = null;
+    	try {
+    		 restTemplate = new RestTemplate();
+    		   MultiValueMap<String, String> body = new LinkedMultiValueMap<String, String>();
+    		   body.add("client_id", resource);
+    		   body.add("client_secret", secret);
+    		   body.add("grant_type", "refresh_token");
+    		   body.add("refresh_token", usuario.getRefreshToken());
+    		   HttpHeaders headers = new HttpHeaders();
+    		   headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+    		   HttpEntity<?> entity = new HttpEntity<Object>(body, headers);
+    		   response = restTemplate.exchange(
+    				   keyCloackUrl+"/token", HttpMethod.POST, entity, String.class);
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+		}
+    	System.out.println(response);
+    	return response.getBody();
+	}
+	
+	public String userInfo(String token) {
+		ResponseEntity<String> response  = null;
+    	try {
+    		 restTemplate = new RestTemplate();
+    		   MultiValueMap<String, String> body = new LinkedMultiValueMap<String, String>();
+    		   HttpHeaders headers = new HttpHeaders();
+    		   headers.set("Authorization", token);
+    		   headers.set("Content-Type", "application/x-www-form-urlencoded");
+    		   //headers.setBearerAuth(token);
+    		   HttpEntity<?> entity = new HttpEntity<Object>(body, headers);
+    		   System.out.println(keyCloackUrl+"/userinfo");
+    		   response = restTemplate.exchange(
+    				   keyCloackUrl+"/userinfo", HttpMethod.POST, entity, String.class);
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+		}
+    	System.out.println(response);
+    	return response.getBody();
+	}
+	
+	public String introspect(DUserToken usuario) {
+		ResponseEntity<String> response  = null;
+    	try {
+    		 restTemplate = new RestTemplate();
+    		   MultiValueMap<String, String> body = new LinkedMultiValueMap<String, String>();
+    		   HttpHeaders headers = new HttpHeaders();
+    		   headers.set("Content-Type", "application/x-www-form-urlencoded");
+    		   body.add("username", usuario.getUsername());
+    		   body.add("password", usuario.getPassword());
+    		   body.add("token", usuario.getToken());
+    		   body.add("grant_type", "password");
+    		   body.add("client_id", resource);
+    		   body.add("client_secret", secret);
+    		   HttpEntity<?> entity = new HttpEntity<Object>(body, headers);
+    		   System.out.println(keyCloackUrl+"/token/introspect");
+    		   response = restTemplate.exchange(
+    				   keyCloackUrl+"/token/introspect", HttpMethod.POST, entity, String.class);
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+		}
+    	System.out.println(response);
+    	return response.getBody();
+	}
+//    
+//    public Object[] createUser(User user){
+//        String message = new String();
+//        int statusId = 0;
+//         try {
+//             UsersResource usersResource = getUsersResource();
+//             UserRepresentation userRepresentation = new UserRepresentation();
+//             userRepresentation.setUsername(user.getUsername());
+//             userRepresentation.setEmail(user.getEmail());
+//             userRepresentation.setFirstName(user.getFirstName());
+//             userRepresentation.setLastName(user.getLastName());
+//             userRepresentation.setEnabled(true);
+//
+//             Response result = usersResource.create(userRepresentation);
+//             statusId = result.getStatus();
+//
+//             if(statusId == 201){
+//                 String path = result.getLocation().getPath();
+//                 String userId = path.substring(path.lastIndexOf("/") + 1);
+//                 CredentialRepresentation passwordCredential = new CredentialRepresentation();
+//                 passwordCredential.setTemporary(false);
+//                 passwordCredential.setType(CredentialRepresentation.PASSWORD);
+//                 passwordCredential.setValue(user.getPassword());
+//                 usersResource.get(userId).resetPassword(passwordCredential);
+//
+//                 RealmResource realmResource = getRealmResource();
+//                 RoleRepresentation roleRepresentation = realmResource.roles().get("realm-user").toRepresentation();
+//                 realmResource.users().get(userId).roles().realmLevel().add(Arrays.asList(roleRepresentation));
+//                 message = ("usuario creado con éxito");
+//             }else if(statusId == 409){
+//                 message = ("ese usuario ya existe");
+//             }else{
+//                 message = ("error creando el usuario");
+//             }
+//         }catch (Exception e){
+//             e.printStackTrace();
+//         }
+//
+//         return new Object[]{statusId, message};
+//    }
 
-             Response result = usersResource.create(userRepresentation);
-             statusId = result.getStatus();
 
-             if(statusId == 201){
-                 String path = result.getLocation().getPath();
-                 String userId = path.substring(path.lastIndexOf("/") + 1);
-                 CredentialRepresentation passwordCredential = new CredentialRepresentation();
-                 passwordCredential.setTemporary(false);
-                 passwordCredential.setType(CredentialRepresentation.PASSWORD);
-                 passwordCredential.setValue(user.getPassword());
-                 usersResource.get(userId).resetPassword(passwordCredential);
 
-                 RealmResource realmResource = getRealmResource();
-                 RoleRepresentation roleRepresentation = realmResource.roles().get("realm-user").toRepresentation();
-                 realmResource.users().get(userId).roles().realmLevel().add(Arrays.asList(roleRepresentation));
-                 message = ("usuario creado con éxito");
-             }else if(statusId == 409){
-                 message = ("ese usuario ya existe");
-             }else{
-                 message = ("error creando el usuario");
-             }
-         }catch (Exception e){
-             e.printStackTrace();
-         }
 
-         return new Object[]{statusId, message};
-    }
+//    private RealmResource getRealmResource(){
+//        Keycloak kc = KeycloakBuilder.builder().serverUrl(server_url).realm(realm).username("admin")
+//                .password(secret).clientId(resource).resteasyClient(new ResteasyClientBuilder().connectionPoolSize(10).build())
+//                .build();
+//        return kc.realm(realm);
+//    }
+//
+//    private UsersResource getUsersResource(){
+//        RealmResource realmResource = getRealmResource();
+//        return realmResource.users();
+//    }
 
-    private RealmResource getRealmResource(){
-        Keycloak kc = KeycloakBuilder.builder().serverUrl(server_url).realm("master").username("admin")
-                .password("admin").clientId("admin-cli").resteasyClient(new ResteasyClientBuilder().connectionPoolSize(10).build())
-                .build();
-        return kc.realm(realm);
-    }
 
-    private UsersResource getUsersResource(){
-        RealmResource realmResource = getRealmResource();
-        return realmResource.users();
-    }
+
+	
 }
