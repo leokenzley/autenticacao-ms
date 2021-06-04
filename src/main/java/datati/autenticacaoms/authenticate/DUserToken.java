@@ -24,5 +24,6 @@ public class DUserToken implements Serializable {
 	private String username;
 	private String password;
 	private String redirectURI;
+	private String id;
 	
 }

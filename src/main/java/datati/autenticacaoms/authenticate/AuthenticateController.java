@@ -41,17 +41,14 @@ public class AuthenticateController {
 	} 
 	
 	
-	@RequestMapping(value = "/user-info", method = RequestMethod.POST,
-	        consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, 
-	        produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(value = "/user-info", method = RequestMethod.POST)
 	public ResponseEntity<?> userInfo(@RequestHeader(value="Authorization") String authorizationHeader){
 		System.out.println(authorizationHeader);
 		try {			
-			return new ResponseEntity<String>(keycloakService.userInfo(authorizationHeader), HttpStatus.OK);
+			return new ResponseEntity<DUserInfo>(keycloakService.userInfo(authorizationHeader), HttpStatus.OK);
 		} catch (Exception e) {
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.UNAUTHORIZED);
 		}
-		
 	} 
 	
 	
@@ -69,14 +66,12 @@ public class AuthenticateController {
 		
 	} 
 	
-	@RequestMapping(value = "/logout", method = RequestMethod.POST,
-	        consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, 
-	        produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<?> logout(DUserToken usuario, @RequestHeader(value="Authorization") String authorizationHeader){
+	@RequestMapping(value = "/logout", method = RequestMethod.POST)
+	public ResponseEntity<?> logout(@RequestBody DUserToken usuario, @RequestHeader(value="Authorization") String authorizationHeader){
 		System.out.println(usuario);
 		try {
-			
-			return new ResponseEntity<String>(keycloakService.logout(usuario, authorizationHeader), HttpStatus.OK);
+			System.out.println(usuario.getRefreshToken());
+			return new ResponseEntity<String>(keycloakService.logout(usuario, authorizationHeader), HttpStatus.NO_CONTENT);
 		} catch (Exception e) {
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.UNAUTHORIZED);
 		}

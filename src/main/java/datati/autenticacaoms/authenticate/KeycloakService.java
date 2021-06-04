@@ -1,17 +1,13 @@
 package datati.autenticacaoms.authenticate;
 
-import java.util.Arrays;
-
-import javax.ws.rs.core.Response;
-
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import org.keycloak.KeycloakPrincipal;
+import org.keycloak.KeycloakSecurityContext;
+import org.keycloak.adapters.springsecurity.account.SimpleKeycloakAccount;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UsersResource;
-import org.keycloak.representations.idm.CredentialRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -19,10 +15,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.client.RestTemplate;
 
 @Service
@@ -50,6 +46,8 @@ public class KeycloakService {
     
     @Autowired
 	RestTemplate restTemplate;
+    
+    
 
     /**
      * Get Access Token
@@ -96,12 +94,11 @@ public class KeycloakService {
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 		}
-    	System.out.println(response);
     	return response.getBody();
 	}
 	
-	public String userInfo(String token) {
-		ResponseEntity<String> response  = null;
+	public DUserInfo userInfo(String token) {
+		ResponseEntity<DUserInfoKeyCloak> response  = null;
     	try {
     		 restTemplate = new RestTemplate();
     		   MultiValueMap<String, String> body = new LinkedMultiValueMap<String, String>();
@@ -111,14 +108,24 @@ public class KeycloakService {
     		   HttpEntity<?> entity = new HttpEntity<Object>(body, headers);
     		   System.out.println(keyCloackUrl+"/userinfo");
     		   response = restTemplate.exchange(
-    				   keyCloackUrl+"/userinfo", HttpMethod.POST, entity, String.class);
+    				   keyCloackUrl+"/userinfo", HttpMethod.POST, entity, DUserInfoKeyCloak.class);
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 		}
-    	System.out.println(response);
-    	return response.getBody();
+    	
+    	return parseUserInfo(response.getBody());
 	}
 	
+	private DUserInfo parseUserInfo(DUserInfoKeyCloak userInfoKeycloak) {
+		DUserInfo userInfo = new DUserInfo();
+		userInfo.setId(userInfoKeycloak.getSub());
+		userInfo.setName(userInfoKeycloak.getName());
+		userInfo.setUserName(userInfoKeycloak.getPreferred_username());
+		userInfo.setEmail(userInfoKeycloak.getEmail());
+		return userInfo;
+	}
+
+
 	public String introspect(DUserToken usuario) {
 		ResponseEntity<String> response  = null;
     	try {
@@ -155,8 +162,8 @@ public class KeycloakService {
     		   headers.set("Content-Type", "application/x-www-form-urlencoded");
     		   body.add("refresh_token", usuario.getRefreshToken());
     		   body.add("redirect_uri", usuario.getRedirectURI());
-    		   body.add("token", usuario.getToken());
-    		   body.add("grant_type", "password");
+    		  
+    		  
     		   body.add("client_id", resource);
     		   body.add("client_secret", secret);
     		   HttpEntity<?> entity = new HttpEntity<Object>(body, headers);
@@ -225,8 +232,4 @@ public class KeycloakService {
         RealmResource realmResource = getRealmResource();
         return realmResource.users();
     }
-
-
-
-	
 }
